@@ -27,7 +27,37 @@ var getMenuUrl = function(slug, type){
   return `http://api-g.weedmaps.com/discovery/v1/listings/dispensaries/the-kana-company/menu_items?page=1&page_size=${max_page_size}`;
 };
 
-function searchListings(_searchTerms, dispensaries){
+function displayMatchDisp(dispensaries){
+  console.log('Dispensaries with '+searchTerms);
+  dispensaries.forEach(function(disp){
+    console.log("\n"+disp.name);
+  });
+};
+
+function main(){
+  rl.question('Search for: ', (inputSearch)=>{
+    searchTerms = inputSearch.split(' ');
+    console.log('Search terms: '+searchTerms.toString());
+    http.get(listingsUrl, (res) => {
+      res.setEncoding('utf8');
+      let rawData = '';
+      res.on('data', (chunk) => {
+        rawData += chunk;
+      });
+      res.on('end', () => {
+        try {
+          const parsedData = JSON.parse(rawData);
+          searchListings(searchTerms, parsedData.data.listings);
+          //rl.close();
+        } catch (e) {
+          console.error(e.message);
+        }
+      });
+    });
+  }); 
+}
+
+var searchListings = function(_searchTerms, dispensaries){
     console.log("found "+dispensaries.length+" dispenseries")
     var matchingDispensaries = []
     var index = 0
@@ -48,7 +78,7 @@ function searchListings(_searchTerms, dispensaries){
       searchMenuRecurs(_searchTerms, dispensaries, ++index, matchingDispensaries, callback);
     }
     searchMenuRecurs(_searchTerms, dispensaries, index, [], callback);
-}
+};
 
 function searchMenuRecurs(_searchTerms, dispensaries, index, matchingDispensaries, callback){
   if(typeof callback === "function"){
@@ -67,29 +97,29 @@ function searchMenuRecurs(_searchTerms, dispensaries, index, matchingDispensarie
       var menuSearchDone = false;
       var menuUrl = getMenuUrl(slug,type);
 
-      console.log('menu url is '+menuUrl);
+      //console.log('menu url is '+menuUrl);
 
       http.get(menuUrl, (res) => {
-        console.log('getting menu');
+        //console.log('getting menu');
         res.setEncoding('utf8');
         let rawData = '';
         res.on('data', (chunk) => { 
-          console.log("received data chunk");
+          //console.log("received data chunk");
           rawData += chunk;
         });
         res.on('end', () => {
-          console.log("end response");
+          //console.log("end response");
           var cbRes = {
             status: "incomplete",
             err: false
           };
           try {
-            console.log("end of response; try");
+            //console.log("end of response; try");
             const parsedData = JSON.parse(rawData);
             cbRes.found = scanMenuForTerm(_searchTerms, parsedData.categories);
             cbRes.status = "complete"
           } catch (e) {
-            console.log("error http get");
+            //console.log("error http get");
             cbRes.err = true;
             cbRes.status = "error"
             cbRes.body = {
@@ -101,7 +131,7 @@ function searchMenuRecurs(_searchTerms, dispensaries, index, matchingDispensarie
         });
       });
 
-      console.log("end of searchmenu")
+      //console.log("end of searchmenu")
     }
   } else {
     console.log("Callback not a function. It is "+typeof callback)
@@ -128,36 +158,8 @@ function scanMenuForTerm(_searchTerms, menu){
       }
     });
   });
+  rl.close();
   return found;
-}
-
-function displayMatchDisp(dispensaries){
-  console.log('Dispensaries with '+searchTerms);
-  dispensaries.forEach(function(disp){
-    console.log("\n"+disp.name);
-  });
-}
-
-function main(){
-  rl.question('Search for: ', (inputSearch)=>{
-    searchTerms = inputSearch.split(' ');
-    console.log('Search terms: '+searchTerms.toString());
-    http.get(listingsUrl, (res) => {
-      res.setEncoding('utf8');
-      let rawData = '';
-      res.on('data', (chunk) => { rawData += chunk; });
-      res.on('end', () => {
-        try {
-          const parsedData = JSON.parse(rawData);
-          searchListings(searchTerms, parsedData.data.listings);
-          rl.close();
-        } catch (e) {
-          console.error(e.message);
-        }
-      });
-    });
-  });
-  
 }
 
 main();
