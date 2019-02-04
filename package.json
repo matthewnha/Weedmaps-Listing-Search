@@ -1,0 +1,24 @@
+{
+  "name": "weedmaps-listing-search",
+  "version": "0.1.0",
+  "description": "WeedMaps CLI to search nearby dispensaries for a particular product",
+  "main": "Main.js",
+  "scripts": {
+    "test": "node main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matthewnha/Weedmaps-Listing-Search.git"
+  },
+  "keywords": [
+    "WeedMaps",
+    "search",
+    "nodejs"
+  ],
+  "author": "Matthew Ha",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/matthewnha/Weedmaps-Listing-Search/issues"
+  },
+  "homepage": "https://github.com/matthewnha/Weedmaps-Listing-Search#readme"
+}

@@ -2,6 +2,7 @@ const http = require('http'),
     https = require('https'),
     child_process = require('child_process'),
 	  readline = require('readline');
+    MenuSearch = require('./MenuSearch');
 	
 const rl = readline.createInterface({
   input: process.stdin,
@@ -61,9 +62,11 @@ var searchListings = function(_searchTerms, dispensaries){
     console.log("found "+dispensaries.length+" dispenseries")
     var matchingDispensaries = []
     var index = 0
+
     var callback = function(res, currDispensary, matchingDispensaries){
       if(res.err){
         console.log(res.body);
+
       } else if(res.status === "complete"){
         if(res.found.length > 0){
           matchingDispensaries.push(currDispensary)
@@ -71,12 +74,15 @@ var searchListings = function(_searchTerms, dispensaries){
           res.found.forEach(function(product){
             console.log("    "+product.category+": "+product.name+"\n      http://weedmaps.com"+product.url);
           });
+
         } else console.log("  No matches.")
+
       } else if(res.status === "done"){
         displayMatchDisp(matchingDispensaries);
       }
       searchMenuRecurs(_searchTerms, dispensaries, ++index, matchingDispensaries, callback);
     }
+    
     searchMenuRecurs(_searchTerms, dispensaries, index, [], callback);
 };
 
@@ -97,69 +103,21 @@ function searchMenuRecurs(_searchTerms, dispensaries, index, matchingDispensarie
       var menuSearchDone = false;
       var menuUrl = getMenuUrl(slug,type);
 
-      //console.log('menu url is '+menuUrl);
+      var search = new MenuSearch("the-kana-company")
+      var done = (results) => {
+          results.forEach( (item)=> {
+              console.log(`Match:\n\tProduct Name: ${item.name}\n\tCategory: ${item.category.name}\n\tLink: ${item.web_url}`);
+              callback(cbRes, dispensary, matchingDispensaries);
+          });
+      }
+      search.searchFor(['cbd', 'pod'], done);
 
-      http.get(menuUrl, (res) => {
-        //console.log('getting menu');
-        res.setEncoding('utf8');
-        let rawData = '';
-        res.on('data', (chunk) => { 
-          //console.log("received data chunk");
-          rawData += chunk;
-        });
-        res.on('end', () => {
-          //console.log("end response");
-          var cbRes = {
-            status: "incomplete",
-            err: false
-          };
-          try {
-            //console.log("end of response; try");
-            const parsedData = JSON.parse(rawData);
-            cbRes.found = scanMenuForTerm(_searchTerms, parsedData.categories);
-            cbRes.status = "complete"
-          } catch (e) {
-            //console.log("error http get");
-            cbRes.err = true;
-            cbRes.status = "error"
-            cbRes.body = {
-              error: e.message,
-              urlRequested: menuUrl
-            };
-          }
-          callback(cbRes, dispensary, matchingDispensaries);
-        });
-      });
-
-      //console.log("end of searchmenu")
     }
   } else {
     console.log("Callback not a function. It is "+typeof callback)
     return;
-  }
-}
 
-function scanMenuForTerm(_searchTerms, menu){
-  var found = [];
-  menu.forEach(function(submenu){
-    submenu.items.forEach(function(product){
-      var matchedTerms = 0;
-      var regexSearchTerms = getRegExps(_searchTerms);
-      regexSearchTerms.forEach(function(regExp){
-        if((product.body+product.name).match(regExp))
-          matchedTerms++;
-      });
-      if(matchedTerms >= regexSearchTerms.length){
-        found.push({
-          name: product.name,
-          category: product.category_name,
-          url: product.url
-        });
-      }
-    });
-  });
-  rl.close();
-  return found;
+  }
 }
 
 main();
